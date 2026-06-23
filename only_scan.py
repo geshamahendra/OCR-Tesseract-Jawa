@@ -2,6 +2,7 @@ from PIL import Image, ImageFilter, ImageEnhance
 import os
 import pytesseract
 import re
+import platform
 
 def preprocess_image(image):
     """Apply preprocessing to enhance OCR accuracy."""
@@ -71,16 +72,25 @@ def extract_text_from_images(
     return extracted_text
 
 if __name__ == "__main__":
-    project_name = "ramayana"  # Nama project 
-    ocr_language = "ramayana"  # Bahasa OCR (.traineddata)
+    project_name = "ramayana"  #nama project
+    ocr_language = "ramayana"  #bahasa ocr (.traineddata)
 
     base_dir = f"scan_result/result_{project_name}"
     images_dir = os.path.join(base_dir, "images")
     output_text_file = os.path.join(base_dir, f"result_{project_name}.txt")
+    
+    tessdata_dir = "model_result" #file hasil training
+    process_even_or_odd = None  # ganjil/genap?
 
-    tessdata_dir = "tesstrain/data"
-    tesseract_path = "tesseract"  # Path executable Tesseract
-    process_even_or_odd = None  # 'even', 'odd', None
+    # --- SISTEM DETEKSI OTOMATIS OS (FALLBACK) ---
+    sistem_operasi = platform.system()
+    
+    if sistem_operasi == "Windows":
+        tesseract_path = r"C:\Users\prabasuyasa\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+    else:
+        # Untuk Mac atau Linux, gunakan global command
+        tesseract_path = "tesseract"
+    # ---------------------------------------------
 
     extract_text_from_images(
         images_folder=images_dir,
