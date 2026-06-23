@@ -5,6 +5,10 @@
 *.box*
 *.gt.txt*
 *.ltsm*
-*.lstm*
-*.unicharset*
-*.checkpoint*
+*lstm*
+*charset*
+*checkpoint*
+*list*
+*log
+*.train
+*txt
