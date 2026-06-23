@@ -1,0 +1,298 @@
+---pindah ke tesstrain
+TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=eng_jawa START_MODEL=eng TESSDATA=../tesseract/tessdata MAX_ITERATIONS=100
+
+TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=lat_java START_MODEL=eng TESSDATA=../tesseract/tessdata MAX_ITERATIONS=60000
+
+
+---pindah ke tesstrain
+TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=Jawa START_MODEL=Khmer TESSDATA=../tesseract/tessdata MAX_ITERATIONS=60000
+
+===Perintah Training dari nol===
+TESSDATA_PREFIX=../tesseract/tessdata \
+make training \
+MODEL_NAME=Jawa \
+TESSDATA=../tesseract/tessdata \
+LANGDATA_DIR=../langdata \
+TRAINING_DATA=~/tesstrain/data/Jawa \
+MAX_ITERATIONS=60000
+
+
+TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=lat_jawa START_MODEL=eng TESSDATA=../tesseract/tessdata MAX_ITERATIONS=60000
+nirbhayâtah manah Sang Hanūmân mulat kâdbhutekang watĕk râkṣase sor
+priyahita
+
+tesstrain/TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=iast START_MODEL=eng TESSDATA=../tesseract/tessdata MAX_ITERATIONS=14000
+
+
+
+
+#######============############
+10 Desember 2024
+
+Regex sumanasantaka
+
+#ganti ujung baris dengan koma
+^(.*[a-zA-Z-āīūö])$ ganti dengan \1,
+
+mencari ujung baris yang setelahnya ada angka
+(?<=,)\s*(\d+) ganti dengan \*\n\1
+
+###ganti ,* ke * dengan regex \*
+
+cari ujung baris , yang setelahnya spasi kosong diikuti kalimat lagi 
+(?<=),(\n)(\n.*) ganti dengan ,
+
+masukkan ke nomorcanto.py
+
+###mencari ujung baris koma lalu setelahnya spasi kosong
+(?<=,)\s*(.*)
+
+mencari baris kosong dimana baris sebelum dan sesudahnya diakhiri tanda koma
+(?<=,\n)(\n)(?=.*,\n)
+
+ganti angka ke spasi kosong ^\d+$ ganti dengan <kosong>
+
+Mengambil regex Canto...
+(Canto\s\d+),\s*(.*?)(\W) ganti dengan <\2>\3
+
+
+cari yang barisnya banyak
+((\d+\\\d+\\\d+\.\s).*$\n)((\w+.*,\n){3})(\w+.*\*\n)
+
+
+Pelatihan tesseract
+
+Ah, baiklah! Anda ingin fokus pada **kode untuk melatih Tesseract OCR** menggunakan Python. Berikut adalah panduan dan skrip dasar untuk memulai pelatihan Tesseract agar mengenali teks seperti di gambar Anda (dengan karakter Latin dan diakritik seperti **ā, ö, ê**).
+
+---
+
+### **1. Prasyarat**
+Sebelum menjalankan kode, pastikan Anda telah:
+1. **Menginstal Tesseract**:
+   ```bash
+   brew install tesseract
+   ```
+2. **Menginstal Python** dan pustaka pendukung:
+   ```bash
+   pip install pillow
+   ```
+
+---
+
+### **2. Langkah Utama**
+Pelatihan Tesseract memerlukan data berupa gambar teks dan transkripsinya. Kita akan menggunakan Python untuk membuat data ini.
+
+#### **Skrip Python untuk Mempersiapkan Data Pelatihan**
+
+```python
+from PIL import Image, ImageDraw, ImageFont
+import os
+
+# Direktori output untuk menyimpan gambar dan transkrip
+output_dir = "training_data"
+os.makedirs(output_dir, exist_ok=True)
+
+# Konfigurasi font dan ukuran
+font_path = "/System/Library/Fonts/Supplemental/Times New Roman.ttf"  # Ganti dengan font diakritik yang sesuai
+font_size = 32
+font = ImageFont.truetype(font_path, font_size)
+
+# Contoh teks untuk pelatihan
+training_text = [
+    "Hana sira ratu dibya rênön",
+    "praśāsta riņ rāt musuh nira praṇata",
+    "jaya paṇḍita riņ aji kabeh",
+    "sañ Daśaratha nāma tamoli"
+]
+
+# Buat gambar untuk setiap baris teks
+for idx, line in enumerate(training_text):
+    image_width = 800
+    image_height = 100
+    image = Image.new("L", (image_width, image_height), color=255)  # Gambar hitam-putih
+    draw = ImageDraw.Draw(image)
+    
+    # Tulis teks ke dalam gambar
+    text_position = (10, 10)
+    draw.text(text_position, line, font=font, fill=0)
+
+    # Simpan gambar dan transkripsi
+    image.save(f"{output_dir}/line_{idx + 1}.tif")
+    with open(f"{output_dir}/line_{idx + 1}.gt.txt", "w", encoding="utf-8") as f:
+        f.write(line)
+
+print(f"Data pelatihan disimpan di: {output_dir}")
+```
+
+Kode ini akan:
+1. Membuat gambar TIFF dari teks dengan diakritik.
+2. Menyimpan file `.tif` dan transkripnya (`.gt.txt`) di direktori `training_data`.
+
+---
+
+### **3. Melanjutkan Pelatihan dengan Tesseract**
+Setelah data pelatihan siap, gunakan Tesseract untuk melanjutkan pelatihan.
+
+#### **Langkah Pelatihan dengan Perintah Terminal**
+1. Konversi gambar menjadi file pelatihan:
+   ```bash
+   tesseract training_data/line_1.tif training_data/line_1 lstm.train
+   ```
+
+2. Gabungkan semua file `.lstmf` ke dalam satu daftar:
+   ```bash
+   echo training_data/*.lstmf > training_data/all-lstmf.txt
+   ```
+
+3. Lakukan pelatihan:
+   ```bash
+   lstmtraining --continue_from /path/to/baseline.traineddata \
+   --model_output my_model \
+   --traineddata /path/to/langdata \
+   --train_listfile training_data/all-lstmf.txt \
+   --max_iterations 1000
+   ```
+
+4. Gabungkan model:
+   ```bash
+   combine_tessdata -o my_model.traineddata my_model
+   ```
+
+---
+
+### **4. Output Akhir**
+- Model baru (`my_model.traineddata`) akan dihasilkan.
+- File ini dapat Anda gunakan untuk OCR dengan bahasa yang telah Anda latih:
+  ```bash
+  tesseract test-image.tif output -l my_model
+  ```
+
+---
+
+
+10 desember 
+
+Tentu! Tesseract OCR sangat fleksibel, dan Anda dapat menggunakannya di macOS serta melatihnya untuk mengenali karakter khusus seperti `ā ī ū ṅ ñ è ĕ ö`. Berikut adalah langkah-langkahnya:
+
+---
+
+### **1. Instalasi Tesseract di macOS**
+Anda dapat menginstal Tesseract menggunakan **Homebrew**:
+
+1. Pastikan Homebrew sudah diinstal. Jika belum, jalankan:
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+
+2. Instal Tesseract dengan Homebrew:
+   ```bash
+   brew install tesseract
+   ```
+
+3. Untuk memverifikasi instalasi:
+   ```bash
+   tesseract --version
+   ```
+
+---
+
+### **2. Melatih Tesseract untuk Karakter Khusus**
+
+Untuk melatih Tesseract agar mengenali karakter khusus seperti `ā ī ū ṅ ñ è ĕ ö`, Anda perlu membuat data pelatihan kustom. Berikut langkah-langkahnya:
+
+#### **a. Siapkan Data Pelatihan**
+1. **Buat dataset teks** yang berisi semua karakter yang ingin dikenali. Misalnya:
+   ```
+   ā ī ū ṅ ñ è ĕ ö
+   ```
+
+2. Gunakan alat seperti `jTessBoxEditor` atau `Tesseract Training Tool` untuk membuat file **box** (berisi koordinat setiap karakter) yang sesuai dengan data gambar.
+
+---
+
+#### **b. Proses Pelatihan**
+1. **Buat gambar pelatihan**: Gunakan alat seperti Photoshop atau GIMP untuk membuat gambar teks (contoh font dan ukuran) berisi karakter yang Anda inginkan.
+
+2. **Hasilkan file box**:
+   - Jalankan perintah untuk membuat file box:
+     ```bash
+     tesseract image.png output_name box.train
+     ```
+
+3. **Edit file box**:
+   - Gunakan editor teks untuk memastikan setiap karakter diidentifikasi dengan benar dalam file `.box`.
+
+4. **Kompilasi pelatihan**:
+   - Jalankan perintah berikut untuk memulai proses pelatihan:
+     ```bash
+     tesseract image.png output_name lstm.train
+     ```
+
+5. **Gabungkan hasil pelatihan**:
+   - Gunakan `combine_tessdata` untuk menggabungkan hasil pelatihan ke dalam file `.traineddata`:
+     ```bash
+     combine_tessdata -o custom_font.traineddata
+     ```
+
+6. **Pindahkan file `.traineddata` ke folder Tesseract**:
+   ```bash
+   mv custom_font.traineddata /usr/local/share/tessdata/
+   ```
+
+---
+
+### **3. Menggunakan Model Pelatihan Kustom**
+Sekarang Anda dapat menggunakan model pelatihan kustom dengan perintah seperti ini:
+```bash
+tesseract input_image.png output_text --oem 1 -l custom_font
+```
+
+---Tu
+
+### **4. Tips**
+- Jika Anda mengalami kesulitan dengan pengaturan box file, gunakan alat seperti [jTessBoxEditor](https://github.com/NguyenThang/jTessBoxEditor) untuk mempermudah pengeditan.
+- Pastikan gambar pelatihan memiliki kualitas tinggi dan karakter tidak saling bertumpuk.
+
+Butuh bantuan lebih lanjut dalam bagian tertentu? 😊
+
+===Update setelah bisa run jtessboxeditorfx===
+
+Menyiapkan jtessboxeditor
+Perlu install java (brew install openjdk)
+Tambahkan Symlink java di mac
+sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk \
+     /Library/Java/JavaVirtualMachines/openjdk.jdk
+
+Perlu install javafxsdk (https://gluonhq.com/products/javafx/)
+Command Run untuk jtessboxeditor
+java -Xms128m -Xmx1024m --module-path ~/My_Home/Programs/javafx-sdk-23.0.1/lib --add-modules javafx.controls,javafx.fxml,javafx.web,javafx.swing -jar ~/My_Home/Programs/jTessBoxEditorFX/jTessBoxEditorFX.jar
+
+(Tolong diperbaharui lagi kalo nanti misal ada perubahan)
+
+Menyiapkan file .tif buat training
+
+Buat text sampel di tab tiff/box generator, save di direktori lain nanti muncul file .box & .tif
+Pindah ke tab box editor muat file .tif yang tadi dibuat dan file gambar yang mau kita buat training, jadi file gambar ini bakal menimpa file .tif sampel text yang udh dibuat
+Edit box koordinat dan save
+
+Pertanyaan
+Apakah bisa kita buat file .tif dan .box dari pembacaan gambar yang udah ada misal dengan bahasa "eng" atau "san" lalu tinggal kita koreksi pake jtessboxeditor? Karena mengedit file box dengan geser koordinat manual terlalu lama +mungkin ini bisa dibuat lewat python langsung+
+Coba ganti strategi tarining, jadi kita generate file .box dan .tif dari font langsung kita train buat bahasa "san" buat dia tau dulu karakter unik kayak ĀāĪīŪūÑñṄṅŊŋṢṣŚśṬṭḌḍÈèĔĕÉéÖö
+Apa kita bisa men-tuning hasil training yang sudah ada cth bahasa "eng" jadi gaperlu repot2 bikin ulang? +Kayaknya perlu download dependensi lain, baiknya dirapihin dulu folder kerjanya+
+Cara training perlu dicari lagi apakah perlu lewat command biasa atau ada interface lain karena terlalu kompleks, kalaupun pake command biasa harus dicatat setiap tahapannya +atau kita bisa buat dengan python juga+
+Sekalian coba cari tahu apakah ada perbedaan antara kita mentuning training yang sudah ada dengan kita buat training ulang (persiapam untuk aksara jawa nanti)
+
+===pake chatgpt mahendragesha3
+Push semua ini ke github bahkan konverter2 yang lain juga
+
+
+Perbaiki isi directory ocr_tesseract, baca readme dari tesstrain dulu sebelum mulai
+
+11 Desember 2024
+
+Ganti strategi pelatihan:
+Buat file .tif, .box, dan .gt.txt dengan split_training_text.py
+Mulai pelatihan dengan command "TESSDATA_PREFIX=../tesseract/tessdata make training MODEL_NAME=eng_jawa START_MODEL=eng TESSDATA=../tesseract/tessdata MAX_ITERATIONS=<bisa diatur>"
+Arahkan tessdata folder ke folder hasil tarining kita di zsh "export TESSDATA_PREFIX=/Users/geshamahendra/My_Home/ocr_tesseract/tesstrain/data" buat meload file hasil trainingan
+Jalankan script main_scan buat ngetes ocr
+
