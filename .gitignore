@@ -1,3 +1,7 @@
 *.png
 *.pdf
 /scan_source
+*.tif*
+*.box*
+*.gt.txt*
+*.ltsm*
