@@ -5,3 +5,5 @@
 *.box*
 *.gt.txt*
 *.ltsm*
+*.lstm*
+*.unicharset*
